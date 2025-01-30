@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 
 function App() {
@@ -10,22 +9,30 @@ function App() {
 
   // 로컬스토리지에서 할 일 목록 불러오기, 첫 렌더링시에만
   useEffect(() => {
-    const savedTodos = JSON.parse(localStorage.getItem("todos"));
+    const savedTodos = localStorage.getItem("todos");
     if (savedTodos) {
-      setTodos(savedTodos);
+      try {
+        setTodos(JSON.parse(savedTodos));
+      } catch (error) {
+        console.error("로컬스토리지 데이터 불러오기 오류!!", error);
+        setTodos([]); // 오류시 빈 배열
+      }
     }
   }, []);
 
-  // 로컬스토리지에 할 일 목록 저장
+  // 로컬스토리지에 할 일 목록 저장, todos에 변동이 생길 때 마다
   useEffect(() => {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos]);
 
   //  할 일 추가 로직
-  const handleAddTodo = () => {
+  const handleAddTodo = (e) => {
+    e.preventDefault(); // 새로고침 방지
+
     const newTodo = {
       id: Date.now(),
       text: inputTodo,
+      completed: false,
     };
 
     // 아무값도 입력되지 않았다면 추가 x
@@ -34,10 +41,19 @@ function App() {
       return;
     }
 
-    setTodos([...todos, newTodo]);
+    setTodos((prevTodos) => [...prevTodos, newTodo]);
     setInputTodo("");
-    alert(`새로운 할 일이 추가되었습니다.`);
+    // alert(`새로운 할 일이 추가되었습니다.`);
     inputRef.current.focus();
+  };
+
+  // 할 일 완료 여부 토글 로직
+  const handleToggleCompleted = (id) => {
+    const toggleCompleted = todos.map((todo) => {
+      return todo.id === id ? { ...todo, completed: !todo.completed } : todo;
+    });
+
+    setTodos(toggleCompleted);
   };
 
   // 할 일 삭제 로직
@@ -47,7 +63,7 @@ function App() {
     });
 
     setTodos(deleteTodo);
-    alert(`할 일이 삭제되었습니다.`);
+    // alert(`할 일이 삭제되었습니다.`);
   };
 
   return (
@@ -67,16 +83,25 @@ function App() {
 
       {/* 할 일 목록 , 여러줄을 return시 ()묶는것 잊지말자!!*/}
       <TodoList>
-        {todos.map((todo) => {
-          return (
-            <TodoItem key={todo.id}>
-              <TodoText>{todo.text}</TodoText>
-              <DeleteButton onClick={() => handleDeleteTodo(todo.id)}>
-                - del
-              </DeleteButton>
-            </TodoItem>
-          );
-        })}
+        {!todos.length ? (
+          <p>아직 할 일이 등록되지 않았습니다.</p>
+        ) : (
+          todos.map((todo) => {
+            return (
+              <TodoItem key={todo.id}>
+                <CheckBox
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => handleToggleCompleted(todo.id)}
+                />
+                <TodoText>{todo.text}</TodoText>
+                <DeleteButton onClick={() => handleDeleteTodo(todo.id)}>
+                  - del
+                </DeleteButton>
+              </TodoItem>
+            );
+          })
+        )}
       </TodoList>
     </MainContainer>
   );
@@ -132,7 +157,7 @@ const TodoList = styled.ul`
 `;
 
 const TodoItem = styled.li`
-  background-color: white;
+  background-color: ${({ completed }) => (completed ? "#dde7dd" : "white")};
   padding: 10px;
   margin: 10px 0;
   border-radius: 5px;
@@ -142,9 +167,14 @@ const TodoItem = styled.li`
   align-items: center;
 `;
 
+const CheckBox = styled.input`
+  margin-right: 15px;
+`;
+
 const TodoText = styled.span`
   font-size: 16px;
   color: #333;
+  text-decoration: ${({ completed }) => (completed ? "line-through" : "none")};
 `;
 
 const DeleteButton = styled.button`
