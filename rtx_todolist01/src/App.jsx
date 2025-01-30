@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useRef } from "react";
 import styled from "styled-components";
 
 function App() {
-  // 전체 투두 목록 관리
-  const [todos, setTodos] = useState([]);
-  // 투두 작성 input
-  const [inputTodo, setInputTodo] = useState("");
+  const [todos, setTodos] = useState([]); // 전체 투두 목록 관리
+  const [inputTodo, setInputTodo] = useState(""); // 투두 작성 input
+
+  const inputRef = useRef(); //
 
   // 로컬스토리지에서 할 일 목록 불러오기, 첫 렌더링시에만
   useEffect(() => {
@@ -20,6 +21,7 @@ function App() {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos]);
 
+  //  할 일 추가 로직
   const handleAddTodo = () => {
     const newTodo = {
       id: Date.now(),
@@ -35,8 +37,10 @@ function App() {
     setTodos([...todos, newTodo]);
     setInputTodo("");
     alert(`새로운 할 일이 추가되었습니다.`);
+    inputRef.current.focus();
   };
 
+  // 할 일 삭제 로직
   const handleDeleteTodo = (id) => {
     const deleteTodo = todos.filter((todo) => {
       return todo.id !== id;
@@ -50,15 +54,16 @@ function App() {
     <MainContainer>
       <Header>rtk Todo List</Header>
       {/* 할 일 form */}
-      <InputContainer>
+      <FormContainer onSubmit={handleAddTodo}>
         <Input
+          ref={inputRef}
           type="text"
           value={inputTodo}
           onChange={(e) => setInputTodo(e.target.value)}
           placeholder="새로운 할 일을 입력하세요."
         />
-        <Button onClick={handleAddTodo}>add+</Button>
-      </InputContainer>
+        <Button type="submit">+ add</Button>
+      </FormContainer>
 
       {/* 할 일 목록 , 여러줄을 return시 ()묶는것 잊지말자!!*/}
       <TodoList>
@@ -67,7 +72,7 @@ function App() {
             <TodoItem key={todo.id}>
               <TodoText>{todo.text}</TodoText>
               <DeleteButton onClick={() => handleDeleteTodo(todo.id)}>
-                del-
+                - del
               </DeleteButton>
             </TodoItem>
           );
@@ -94,7 +99,7 @@ const Header = styled.h1`
   color: #333333;
 `;
 
-const InputContainer = styled.div`
+const FormContainer = styled.form`
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
